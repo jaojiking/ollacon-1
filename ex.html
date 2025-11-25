@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>올라콘 - 통합 모바일 앱 시뮬레이션</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        /* 컬러 토큰 (디자인 일관성) */
+        :root {
+            --primary: #007AFF;
+            --primary-soft: #E5F0FF;
+            --primary-gradient: linear-gradient(135deg, #007AFF, #4C6FFF);
+            --accent: #FF6B3D;
+            --accent-soft: #FFE7DC;
+            --bg: #f6f7fb;
+            --card-bg: #ffffff;
+            --border-subtle: #e4e6f0;
+            --text-main: #222222;
+            --text-sub: #777777;
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+            --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.14);
+            --shadow-card: 0 10px 25px rgba(15, 23, 42, 0.08);
+        }
+
+        /* 기본 리셋 및 폰트 설정 */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at top, #f4f7ff 0, #eceff7 35%, #f7f8fc 100%);
+            color: var(--text-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 모바일 앱 컨테이너 */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: radial-gradient(circle at 0 0, #edf4ff 0, #ffffff 45%);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
+            padding-bottom: 84px; /* 하단 네비게이션 바 공간 */
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+        }
+
+        /* 상단 유리모양 블러 효과 */
+        .app-container::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 10% -10%, rgba(0, 122, 255, 0.18), transparent 55%),
+                        radial-gradient(circle at 100% 0, rgba(255, 107, 61, 0.16), transparent 55%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .screen {
+            padding: 12px 20px 32px;
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===================================== */
+        /* 1. 메인 화면 스타일 */
+        /* ===================================== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 0 8px;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
+        }
+        .header h1 span {
+            text-shadow: 0 6px 14px rgba(0, 122, 255, 0.4);
+        }
+        .icon-button {
+            background: rgba(248, 249, 255, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 9px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #222;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(10px);
+            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, background 0.12s ease-out;
+        }
+        .icon-button:active {
+            transform: scale(0.96) translateY(1px);
+            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.16);
+            background: rgba(241, 245, 255, 0.95);
+        }
+        .menu-button {
+            margin-right: 5px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 18px 0;
+            color: #1f2933;
+            letter-spacing: -0.02em;
+        }
+
+        /* 안내 카드 */
+        .instruction-card {
+            background: radial-gradient(circle at 0 0, #e8f3ff 0, #e0f7fa 45%, #dbeafe 100%);
+            border-radius: var(--radius-lg);
+            padding: 18px 18px 18px 16px;
+            margin-bottom: 22px;
+            border: 1px solid rgba(129, 230, 217, 0.8);
+            cursor: pointer;
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .instruction-card::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            top: -40px;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.35), transparent 60%);
+            opacity: 0.7;
+        }
+        .instruction-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #007ea3;
+            margin: 0 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .instruction-title i {
+            font-size: 18px;
+        }
+        .instruction-subtitle {
+            font-size: 13px;
+            color: #036672;
+            margin: 0;
+        }
+
+        /* 광고 배너 섹션 */
+        .ad-banner-section {
+            background: linear-gradient(120deg, #0f172a, #111827);
+            border-radius: var(--radius-lg);
+            padding: 16px 18px;
+            margin-bottom: 26px;
+            text-align: left;
+            cursor: pointer;
+            min-height: 78px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.65);
+            color: #e5e7eb;
+        }
+        .ad-banner-section::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.45), transparent 60%),
+                radial-gradient(circle at 100% 0, rgba(251, 191, 36, 0.45), transparent 55%);
+            mix-blend-mode: screen;
+            opacity: 0.9;
+        }
+        .ad-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #0f172a;
+            background: rgba(248, 250, 252, 0.96);
+            padding: 3px 7px;
+            border-radius: 999px;
+            margin-bottom: 5px;
+            align-self: flex-start;
+            position: relative;
+            z-index: 1;
+        }
+        .ad-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f9fafb;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -0.01em;
+        }
+
+        /* 메인 메뉴 */
+        .main-menu {
+            margin-bottom: 32px;
+            clear: both;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .menu-item {
+            padding: 18px 16px 18px 16px;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+            min-height: 104px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out, background 0.15s ease-out;
+        }
+        .menu-item::after {
+            content: "";
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.14), transparent 65%);
+        }
+        .menu-item i {
+            font-size: 30px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            z-index: 1;
+        }
+        .menu-item p {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.35;
+            text-align: left;
+            color: #111827;
+            letter-spacing: -0.02em;
+            z-index: 1;
+        }
+        .menu-item:active {
+            transform: scale(0.97) translateY(1px);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+        .menu-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+        }
+
+        /* 3. Promotion Section */
+        .promotion-section {
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .promotion-scroll {
+            display: flex;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+            gap: 10px;
+        }
+
+        .promotion-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .promotion-scroll::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.85);
+            border-radius: 999px;
+        }
+        .promotion-scroll::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.9);
+            border-radius: 999px;
+        }
+
+        .promo-card {
+            flex-shrink: 0;
+            width: 240px;
+            height: 132px;
+            border-radius: 16px;
+            padding: 16px;
+            margin-right: 5px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            transform-origin: center;
+            transition: transform 0.14s ease-out, box-shadow 0.14s ease-out;
+        }
+        .promo-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%);
+            z-index: 1;
+        }
+        .promo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.68);
+        }
+        .promo-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #ffffff;
+            z-index: 2;
+            margin: 0;
+            letter-spacing: -0.03em;
+        }
+        .promo-subtitle {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e5e7eb;
+            z-index: 2;
+            margin: 4px 0 0 0;
+        }
+
+        /* ===================================== */
+        /* 하단 네비게이션 바 스타일 */
+        /* ===================================== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            height: 64px;
+            background: rgba(15, 23, 42, 0.86);
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.68);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 99;
+            border-radius: 999px;
+            padding: 0 8px;
+            backdrop-filter: blur(20px);
+        }
+        .nav-item {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            padding: 5px 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            transition: color 0.16s ease-out, transform 0.14s ease-out, background 0.16s ease-out;
+            border-radius: 999px;
+            min-width: 58px;
+        }
+        .nav-item i {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        .nav-item.active-nav {
+            color: #f9fafb;
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.55);
+            transform: translateY(-3px);
+        }
+
+        /* ===================================== */
+        /* 화면 공통 헤더/리스트 스타일 */
+        /* ===================================== */
+        .exchange-header {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .back-button {
+            font-size: 20px;
+            padding: 7px 11px;
+        }
+        .screen-title {
+            flex-grow: 1;
+            text-align: center;
+        }
+        .exchange-notice, .refund-notice {
+            font-size: 13px;
+            color: #075985;
+            background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+            padding: 12px 12px 12px 12px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            font-weight: 600;
+            border: 1px solid rgba(191, 219, 254, 0.9);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.03);
+        }
+        .exchange-items-list {
+            margin-bottom: 26px;
+        }
+
+        /* 1:1 교환 페이지 카테고리 */
+        .category-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 20px;
+            margin-bottom: 8px;
+            padding-left: 2px;
+        }
+        .category-separator {
+            border: none;
+            height: 1px;
+            background-color: #eef2ff;
+            margin: 10px 0 20px 0;
+        }
+        .exchange-items-list .category-separator:last-child {
+            display: none;
+        }
+        .exchange-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 4px;
+            border-bottom: 1px dashed rgba(226, 232, 240, 0.9);
+            cursor: pointer;
+            transition: background-color 0.12s ease-out, transform 0.08s ease-out;
+        }
+        .exchange-item:last-child {
+            border-bottom: none;
+        }
+        .exchange-item:hover {
+            background-color: #f3f4ff;
+        }
+        .item-info {
+            display: flex;
+            align-items: center;
+        }
+        .item-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(145deg, #4b6fff, #00bcd4);
+            border-radius: 12px;
+            margin-right: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+            color: #f9fafb;
+        }
+        .item-logo i {
+            color: inherit;
+        }
+        .item-name-value p {
+            margin: 0;
+            font-weight: 600;
+            font-size: 15px;
+            color: #111827;
+        }
+        .item-name-value span {
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        .exchange-button {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #fff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out, opacity 0.06s ease-out;
+        }
+        .exchange-button:active {
+            transform: translateY(1px) scale(0.97);
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.55);
+            opacity: 0.9;
+        }
+
+        /* 제품 교환권 페이지 관련 스타일 */
+        .product-category-menu {
+            display: flex;
+            overflow-x: scroll;
+            padding: 4px 0 12px 0;
+            margin-bottom: 6px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            gap: 6px;
+        }
+        .product-category-menu::-webkit-scrollbar {
+            display: none;
+        }
+        .category-button {
+            flex-shrink: 0;
+            background-color: #edf2ff;
+            color: #4b5563;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.16s, color 0.16s, box-shadow 0.16s, transform 0.08s;
+        }
+        .category-button.active {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #f9fafb;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.55);
+            transform: translateY(-1px);
+        }
+        .product-item {
+            display: block;
+            border-radius: 16px;
+            margin-bottom: 14px;
+            padding: 14px 14px 13px;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+            transition: box-shadow 0.14s ease-out, transform 0.12s ease-out, border 0.12s ease-out;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            background: radial-gradient(circle at 0 0, #eef2ff 0, #ffffff 52%);
+        }
+        .product-item:hover {
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+            transform: translateY(-3px);
+        }
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+        }
+        .product-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #111827;
+            margin: 0;
+        }
+        .product-price {
+            font-weight: 900;
+            font-size: 20px;
+            color: #FF5722;
+        }
+        .product-detail {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        .product-detail p {
+            margin: 0;
+        }
+        .product-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .upgrade-info {
+            font-size: 12px;
+            color: #1d4ed8;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .buy-button {
+            background: linear-gradient(135deg, #ff6b3d, #fb923c);
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 12px 28px rgba(249, 115, 22, 0.65);
+            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, opacity 0.06s ease-out;
+        }
+        .buy-button:active {
+            transform: translateY(1px) scale(0.97);
+            box-shadow: 0 6px 14px rgba(249, 115, 22, 0.85);
+            opacity: 0.92;
+        }
+
+        /* ===================================== */
+        /* 4 & 5. 환불/샘플 화면 (Form/Input) 스타일 */
+        /* ===================================== */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 7px;
+            color: #111827;
+        }
+        #pin-count {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            font-size: 14px;
+            appearance: none;
+            background:
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="gray" d="M7 10l5 5 5-5z"/></svg>')
+                no-repeat right 12px center;
+            background-size: 18px;
+            background-color: #f9fafb;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            background-color: #f9fafb;
+        }
+        .form-group input:focus {
+            border-color: #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+            background-color: #ffffff;
+        }
+        .pin-input-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+        .pin-input-item label {
+            flex-shrink: 0;
+            width: 26px;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0;
+            text-align: right;
+            color: #6b7280;
+        }
+        .pin-input-item input {
+            flex-grow: 1;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .action-group {
+            text-align: center;
+            margin-top: 18px;
+            margin-bottom: 26px;
+        }
+        .pin-check-button {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 999px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 8px;
+            box-shadow: 0 14px 32px rgba(59, 130, 246, 0.55);
+        }
+        #overall-status {
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0;
+            padding: 3px 0;
+        }
+        .status-default { color: #9ca3af; }
+        .status-success { color: #16a34a; }
+        .status-error { color: #dc2626; }
+        .final-amount label {
+            color: #ea580c;
+        }
+        .final-amount p {
+            font-size: 22px;
+            font-weight: 900;
+            color: #ea580c;
+            margin-top: 4px;
+        }
+        .refund-submit-button {
+            width: 100%;
+            background: linear-gradient(135deg, #ff6b3d, #fb923c);
+            color: white;
+            border: none;
+            padding: 13px 0;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: background 0.2s, transform 0.12s, box-shadow 0.12s;
+            box-shadow: 0 16px 36px rgba(248, 113, 113, 0.5);
+        }
+        .refund-submit-button:hover {
+            box-shadow: 0 18px 38px rgba(248, 113, 113, 0.7);
+        }
+        .refund-submit-button:active {
+            transform: translateY(1px) scale(0.98);
+        }
+
+        /* 은행 선택 Select */
+        .select-display {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #9ca3af;
+            cursor: pointer;
+            background-color: #f9fafb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .select-display.selected {
+            color: #111827;
+            font-weight: 600;
+            background-color: #ffffff;
+        }
+        .select-display::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        #bank-list-scroll-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+        .bank-item {
+            padding: 11px 14px;
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.1s;
+            color: #111827;
+        }
+        .bank-item:hover {
+            background-color: #eff6ff;
+        }
+        .bank-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(15,23,42,0.45);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .modal.visible {
+            display: flex;
+        }
+        .modal-content {
+            background: radial-gradient(circle at 0 0, #eff6ff 0, #ffffff 55%);
+            padding: 26px 22px 22px;
+            border-radius: 22px;
+            width: 100%;
+            max-width: 360px;
+            position: relative;
+            text-align: center;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.65);
+        }
+        .close-button {
+            color: #9ca3af;
+            font-size: 24px;
+            font-weight: 700;
+            position: absolute;
+            top: 10px;
+            right: 18px;
+            cursor: pointer;
+        }
+        .modal-content h3 {
+            margin-top: 4px;
+            font-size: 18px;
+            color: #111827;
+            font-weight: 800;
+        }
+        .modal-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 12px 0 20px 0;
+            white-space: pre-wrap;
+            color: #4b5563;
+        }
+        #modal-custom-content {
+            margin-bottom: 16px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .btn {
+            padding: 9px 0;
+            border: none;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 700;
+            width: 50%;
+            cursor: pointer;
+        }
+        .btn-cancel {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: white;
+            box-shadow: 0 10px 24px rgba(59, 130, 246, 0.55);
+        }
+
+        /* 6. 마이페이지 스타일 */
+        .mypage-profile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .profile-info .user-name {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 0;
+            color: #111827;
+        }
+        .profile-info .user-email {
+            font-size: 13px;
+            color: #6b7280;
+            margin: 4px 0 0 0;
+        }
+        .edit-profile-button {
+            background-color: #eff6ff;
+            color: #1f2937;
+            border: 1px solid #dbeafe;
+            padding: 7px 13px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.16s;
+        }
+        .edit-profile-button i {
+            margin-right: 4px;
+        }
+
+        .mypage-section {
+            margin-bottom: 26px;
+        }
+        .mypage-section .section-title {
+            font-size: 14px;
+            color: #374151;
+            font-weight: 700;
+            border-left: 3px solid var(--primary);
+            padding-left: 8px;
+            margin-bottom: 10px;
+        }
+        .menu-list {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 13px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+            color: #111827;
+            font-weight: 500;
+            transition: background-color 0.1s;
+        }
+        .list-item:hover {
+            background-color: #f9fafb;
+        }
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        .list-item i {
+            color: #d1d5db;
+            font-size: 13px;
+        }
+        .list-item.logout {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .list-item.logout i {
+            color: #dc2626;
+        }
+        .transaction-list-container {
+            padding-top: 10px;
+        }
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+        .transaction-info {
+            flex-grow: 1;
+        }
+        .transaction-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .transaction-date {
+            font-size: 12px;
+            color: #9ca3af;
+            margin: 2px 0 0 0;
+        }
+        .transaction-amount {
+            font-size: 16px;
+            font-weight: 800;
+            text-align: right;
+            min-width: 88px;
+        }
+        .amount-exchange { color: #1d4ed8; }
+        .amount-refund { color: #dc2626; }
+        .amount-pin { color: #16a34a; }
+
+        /* 모바일 반응형 최적화 (Max-width: 600px) */
+        @media (max-width: 600px) {
+            body {
+                background: #0f172a;
+            }
+            .app-container {
+                max-width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+                padding-bottom: 70px;
+            }
+            .screen {
+                padding: 10px 16px 22px;
+            }
+            .header {
+                padding: 16px 0 8px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .menu-item {
+                padding: 16px 14px;
+                min-height: 96px;
+            }
+            .menu-item i {
+                font-size: 28px;
+            }
+            .menu-item p {
+                font-size: 14px;
+            }
+            .promotion-section {
+                margin-bottom: 24px;
+            }
+            .promo-card {
+                width: 220px;
+                height: 120px;
+            }
+            .pin-input-item {
+                margin-bottom: 8px;
+            }
+            .refund-submit-button, .buy-button {
+                padding: 12px 0;
+                font-size: 15px;
+            }
+            .product-category-menu {
+                padding-bottom: 8px;
+            }
+            .category-button {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <div id="main-screen" class="screen active">
+        <div class="header">
+            <button class="icon-button menu-button" onclick="alert('메뉴 열기 기능은 미구현입니다.')">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <h1>Ollacon 올<span style="color: #007AFF;">라</span>콘</h1>
+            <button class="icon-button" onclick="alert('알림 기능은 미구현입니다.')">
+                <i class="fa-solid fa-bell"></i>
+            </button>
+        </div>
+
+        <div class="instruction-card" onclick="showScreen('guide-screen')">
+            <p class="instruction-title">
+                <i class="fa-solid fa-circle-info"></i>
+                올라콘 사용 가이드
+            </p>
+            <p class="instruction-subtitle">핀번호 등록부터 교환/환불까지, 쉽게 이용하세요!</p>
+        </div>
+
+        <div class="main-menu">
+            <h2 class="section-title">주요 서비스</h2>
+            <div class="menu-grid">
+                <div class="menu-item" onclick="showScreen('exchange-screen')">
+                    <i class="fa-solid fa-right-left"></i>
+                    <p>1:1 금액권 교환</p>
+                </div>
+                <div class="menu-item" onclick="showScreen('product-screen')">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <p>제품 교환권 구매</p>
+                </div>
+                <div class="menu-item" onclick="showScreen('refund-screen')">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <p>실시간 환불 신청</p>
+                </div>
+                <div class="menu-item" onclick="showScreen('sample-screen')">
+                    <i class="fa-solid fa-gift"></i>
+                    <p>무료 샘플 신청</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="ad-banner-section" onclick="alert('광고 페이지로 이동합니다.')">
+            <p class="ad-label">AD</p>
+            <p class="ad-text">새로워진 제휴 혜택, 지금 바로 확인하세요! (최대 30% 할인)</p>
+        </div>
+
+        <div class="promotion-section">
+            <h2 class="section-title">추천 프로모션</h2>
+            <div class="promotion-scroll">
+                <div class="promo-card" style="background-image: url('https://via.placeholder.com/250x140/673AB7/FFFFFF?text=Invite')" onclick="alert('친구 초대 이벤트 페이지')">
+                    <p class="promo-title">친구 초대 이벤트</p>
+                    <p class="promo-subtitle">친구도 나도 5,000 P 지급!</p>
+                </div>
+
+                <div class="promo-card" style="background-image: url('https://via.placeholder.com/250x140/E91E63/FFFFFF?text=Shoes')" onclick="alert('신발 할인 업체 광고 페이지')">
+                    <p class="promo-title">신발 할인 (업체 광고)</p>
+                    <p class="promo-subtitle">최대 50% 할인 특가 진행 중!</p>
+                </div>
+
+                <div class="promo-card" style="background-image: url('https://via.placeholder.com/250x140/009688/FFFFFF?text=Starbucks')" onclick="alert('스타벅스 페이지')">
+                    <p class="promo-title">스타벅스 신규 메뉴</p>
+                    <p class="promo-subtitle">신메뉴 구매 시 무료 사이즈업</p>
+                </div>
+
+                <div class="promo-card" style="background-image: url('https://via.placeholder.com/250x140/FF9800/FFFFFF?text=Beauty')" onclick="alert('뷰티 기획전 페이지')">
+                    <p class="promo-title">뷰티 브랜드 위크</p>
+                    <p class="promo-subtitle">인기 화장품 1+1 기회</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div id="exchange-screen" class="screen">
+        <div class="header exchange-header">
+            <button class="icon-button back-button" onclick="goBackToMain()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h1 class="screen-title">1:1 금액권 교환</h1>
+            <div style="width: 44px;"></div>
+        </div>
+        <div class="exchange-notice">
+            <i class="fa-solid fa-info-circle"></i> 보유하신 올라콘 금액권과 **동일한 금액**의 제휴사 금액권으로 교환됩니다.
+        </div>
+        <div class="exchange-items-list"></div>
+    </div>
+
+    <div id="product-screen" class="screen">
+        <div class="header exchange-header">
+            <button class="icon-button back-button" onclick="goBackToMain()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h1 class="screen-title">제품 교환권 구매 (추가 결제)</h1>
+            <div style="width: 44px;"></div>
+        </div>
+        <div class="exchange-notice">
+            <i class="fa-solid fa-info-circle"></i> 올라콘 금액권 사용 후, **추가 금액**만 결제하여 인기 제품 교환권을 구매합니다.
+        </div>
+        <div class="product-category-menu"></div>
+        <div class="product-items-list"></div>
+    </div>
+
+    <div id="refund-screen" class="screen">
+        <div class="header exchange-header">
+            <button class="icon-button back-button" onclick="goBackToMain()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h1 class="screen-title">실시간 환불 신청</h1>
+            <div style="width: 44px;"></div>
+        </div>
+        <div class="refund-notice">
+            <i class="fa-solid fa-exclamation-triangle"></i> **환불 신청 전 유의 사항**
+            <ul>
+                <li>**실시간** 환불 시스템으로 신청 즉시 처리되며, **1만원권** 단위로 신청 가능합니다. (90% 환불)</li>
+                <li>환불 수수료 **10%**가 차감된 금액이 입금됩니다.</li>
+                <li>최소 1개, 최대 10개까지 한 번에 신청 가능합니다.</li>
+            </ul>
+        </div>
+        <div class="form-group">
+            <label for="pin-count">환불할 핀번호 개수 선택</label>
+            <select id="pin-count" onchange="renderPinInputs()">
+                <option value="1">1개</option>
+                <option value="2">2개</option>
+                <option value="3">3개</option>
+                <option value="4">4개</option>
+                <option value="5">5개</option>
+                <option value="6">6개</option>
+                <option value="7">7개</option>
+                <option value="8">8개</option>
+                <option value="9">9개</option>
+                <option value="10">10개</option>
+            </select>
+        </div>
+        <div id="pin-inputs-container"></div>
+        <div class="action-group">
+            <button class="pin-check-button" onclick="checkAllPins()">전체 핀번호 유효성 확인</button>
+            <p id="overall-status" class="status-default">핀번호 입력 후 [전체 핀번호 확인]을 눌러주세요.</p>
+        </div>
+        <hr style="border-top: 1px solid #eee; margin: 24px 0;">
+        <h2 class="section-title" style="margin-top: 0; padding-left: 0;">환불 정보 입력</h2>
+
+        <div class="form-group">
+            <label>은행명</label>
+            <div id="bank-select-display" class="select-display" onclick="showBankSelectionModal()">
+                은행을 선택하세요
+            </div>
+            <input type="hidden" id="bank-name-value" value="">
+        </div>
+
+        <div class="form-group">
+            <label for="account-number">계좌번호 (하이픈 없이)</label>
+            <input type="text" id="account-number" placeholder="예: 1234567890">
+        </div>
+        <div class="final-amount form-group" style="text-align: left;">
+            <label>최종 입금 예정 금액</label>
+            <p id="final-refund-amount">0 원</p>
+        </div>
+        <button class="refund-submit-button" onclick="submitRefund()">환불 신청 및 입금 요청</button>
+    </div>
+
+    <div id="sample-screen" class="screen">
+        <div class="header exchange-header">
+            <button class="icon-button back-button" onclick="goBackToMain()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h1 class="screen-title">무료 샘플 신청</h1>
+            <div style="width: 44px;"></div>
+        </div>
+        <div class="exchange-notice">
+            <i class="fa-solid fa-star"></i> 선착순 무료 샘플을 신청하세요! (재고 소진 시 마감)
+        </div>
+        <h2 class="section-title">신청 가능 샘플 리스트</h2>
+        <div id="sample-list"></div>
+        <hr style="border-top: 1px solid #eee; margin: 26px 0;">
+        <h2 class="section-title">배송 정보 입력</h2>
+        <div class="form-group">
+            <label for="sample-name">이름</label>
+            <input type="text" id="sample-name" placeholder="이름을 입력하세요">
+        </div>
+        <div class="form-group">
+            <label for="sample-phone">연락처</label>
+            <input type="tel" id="sample-phone" placeholder="예: 010-1234-5678">
+        </div>
+        <div class="form-group">
+            <label for="sample-address">배송 주소</label>
+            <input type="text" id="sample-address" placeholder="정확한 도로명 주소를 입력해주세요">
+        </div>
+        <button class="refund-submit-button" onclick="submitSampleRequest()">무료 샘플 신청하기</button>
+    </div>
+
+    <div id="guide-screen" class="screen">
+        <div class="header exchange-header">
+            <button class="icon-button back-button" onclick="goBackToMain()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h1 class="screen-title">올라콘 사용 가이드</h1>
+            <div style="width: 44px;"></div>
+        </div>
+
+        <div class="guide-content-placeholder" style="padding: 20px; border: 1px dashed #ccc; border-radius: 12px; background-color: #f9fafb;">
+            <h2 style="margin-top: 0; color: #007AFF; font-size: 20px;">🌟 올라콘, 선택의 한계를 넘어선 혁신</h2>
+            <p style="line-height: 1.6; color: #555; font-size: 16px; margin-bottom: 20px;">
+                선물의 기쁨은 그대로 유지하되, 사용처의 제한으로 인해 아쉬움을 남겼던 기존 기프티콘의 구조적 딜레마.<br>
+                **올라콘(Ollacon)**은 이러한 활용의 한계를 완벽하게 해소하기 위해 탄생한 **차세대 기프티콘**입니다.
+                <br><br>
+                핀번호 등록 한 번으로 별도의 수수료나 복잡한 과정 없이, 사용자는 다음과 같은 **두 가지 완전한 자유**를 누릴 수 있습니다.
+            </p>
+            <ul style="padding-left: 20px; margin: 0; line-height: 1.8;">
+                <li style="font-weight: 700; color: #007AFF; margin-bottom: 10px;">
+                    💰 1:1 자유 교환: 
+                    <span style="font-weight: 400; color: #333;">보유하신 올라콘 금액을 원하는 브랜드의 기프티콘으로 수수료 없이 **즉시 교환**하여 사용합니다.</span>
+                </li>
+                <li style="font-weight: 700; color: #007AFF;">
+                    🛍️ 가치 확장 구매: 
+                    <span style="font-weight: 400; color: #333;">올라콘 금액을 결제 수단으로 활용하여 더 나아가 원하는 추가 상품을 선택하고 차액만 추가로 결제하여 **가치를 극대화**할 수 있습니다.</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="mypage-screen" class="screen">
+        <div class="header exchange-header">
+            <div style="width: 44px;"></div>
+            <h1 class="screen-title">마이페이지</h1>
+            <button class="icon-button" onclick="alert('설정 메뉴입니다.')">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+        </div>
+        <div class="mypage-profile">
+            <div class="profile-info">
+                <p class="user-name">김올라 님</p>
+                <p class="user-email">ollacon@example.com</p>
+            </div>
+            <button class="edit-profile-button">
+                <i class="fa-solid fa-pen"></i> 편집
+            </button>
+        </div>
+
+        <div class="mypage-section" style="margin-top: 16px;">
+            <p class="section-title">제휴/파트너 코너</p>
+            <div class="menu-list">
+                <div class="list-item" onclick="alert('제휴사별 특별 혜택을 확인합니다.')">
+                    <span>제휴사 특별 혜택</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="alert('파트너 전용 페이지로 이동합니다.')">
+                    <span>파트너 전용 페이지</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="mypage-section">
+            <p class="section-title">내 활동</p>
+            <div class="menu-list">
+                <div class="list-item" onclick="alert('쿠폰함으로 이동')">
+                    <span>보유 쿠폰함</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="alert('이용 내역 상세')">
+                    <span>전체 이용 내역</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+        <div class="mypage-section">
+            <p class="section-title">최근 거래 내역</p>
+            <div id="recent-transactions" class="transaction-list-container"></div>
+        </div>
+        <div class="mypage-section">
+            <p class="section-title">고객 센터</p>
+            <div class="menu-list">
+                <div class="list-item" onclick="alert('공지사항')">
+                    <span>공지사항</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="alert('1:1 문의')">
+                    <span>1:1 문의하기</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+                <div class="list-item logout" onclick="alert('로그아웃 되었습니다.')">
+                    <span>로그아웃</span>
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active-nav" onclick="showScreen('main-screen', this)">
+            <i class="fa-solid fa-house"></i>
+            <span>홈</span>
+        </button>
+        <button class="nav-item" onclick="showScreen('exchange-screen', this)">
+            <i class="fa-solid fa-right-left"></i>
+            <span>1:1교환</span>
+        </button>
+        <button class="nav-item" onclick="showScreen('product-screen', this)">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>제품교환권구매</span>
+        </button>
+        <button class="nav-item" onclick="showScreen('refund-screen', this)">
+            <i class="fa-solid fa-money-bill-transfer"></i>
+            <span>환불</span>
+        </button>
+        <button class="nav-item" onclick="showScreen('mypage-screen', this)">
+            <i class="fa-regular fa-user"></i>
+            <span>MY</span>
+        </button>
+    </nav>
+
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 id="modal-title">알림</h3>
+            <p id="modal-message">내용입니다.</p>
+            <div id="modal-custom-content"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-cancel" onclick="closeModal()">취소</button>
+                <button class="btn btn-confirm" id="modal-confirm-btn">확인</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // === 1. 데이터 모의 설정 (Mock Data) ===
+    const exchangeItems = [
+        { id: 1, category: '편의점', name: 'GS25 1만원권', brand: 'GS25', sub: '1만원권 전용' },
+        { id: 2, category: '베이커리', name: '파리바게뜨 1만원권', brand: '파리바게뜨', sub: '1만원권 전용' },
+        { id: 3, category: '카페', name: '스타벅스 3만원 금액권', brand: '스타벅스', sub: '3만원권 전용' },
+        { id: 4, category: '패스트푸드', name: '버거킹 3만원 금액권', brand: '버거킹', sub: '3만원권 전용' },
+        { id: 5, category: '외식', name: '애슐리 5만원 금액권', brand: '애슐리', sub: '5만원권 전용' }
+    ];
+
+    const productItems = [
+        { id: 101, category: '베이커리', name: '파리바게뜨 롤케이크', price: 13500, brand: '파리바게뜨' },
+        { id: 102, category: '커피', name: '투썸플레이스 케이크+아메리카노', price: 14900, brand: '투썸플레이스' },
+        { id: 103, category: '치킨', name: '황금올리브치킨 + 콜라', price: 33000, brand: 'BBQ' },
+        { id: 104, category: '피자', name: '포테이토 피자 L + 사이드', price: 34500, brand: '피자헛' },
+        { id: 105, category: '외식', name: '애슐리 2인 식사권', price: 54000, brand: '애슐리' },
+        { id: 106, category: '전자제품', name: '무선 이어폰 (보급형)', price: 50500, brand: '가전' }
+    ];
+
+    const sampleItems = [
+        { id: 201, name: '프리미엄 샴푸 키트 (50ml)', remain: 15 },
+        { id: 202, name: '건강기능식품 3일분', remain: 5 },
+        { id: 203, name: '신상 과자 미니팩', remain: 0 }
+    ];
+
+    const transactions = [
+        { id: 1, title: '환불 입금 완료', date: '2023.10.25', amount: 9000, type: 'refund' },
+        { id: 2, title: '스타벅스 교환', date: '2023.10.20', amount: -4500, type: 'exchange' },
+        { id: 3, title: '핀번호 등록', date: '2023.10.15', amount: 10000, type: 'pin' }
+    ];
+
+    const bankList = [
+        "카카오뱅크", "KB국민", "신한", "우리", "하나", "NH농협",
+        "IBK기업", "KDB산업", "SC제일", "씨티", "새마을금고", "신협",
+        "우체국", "토스뱅크", "케이뱅크", "지역농축협", "수협", "전북",
+        "경남", "광주", "대구", "부산", "제주"
+    ];
+
+    // === 2. 화면 초기화 및 렌더링 함수 ===
+    window.onload = function() {
+        renderExchangeList();
+        renderProductCategories();
+        renderProductList('전체');
+        renderPinInputs();
+        renderSampleList();
+        renderTransactions();
+    };
+
+    function showScreen(screenId, navElement) {
+        const screens = document.querySelectorAll('.screen');
+        screens.forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => item.classList.remove('active-nav'));
+
+        if (navElement) {
+            navElement.classList.add('active-nav');
+        } else {
+            if (screenId === 'main-screen') {
+                navItems[0].classList.add('active-nav');
+            } else if (screenId === 'exchange-screen') {
+                navItems[1].classList.add('active-nav');
+            } else if (screenId === 'product-screen') {
+                navItems[2].classList.add('active-nav');
+            } else if (screenId === 'refund-screen') {
+                navItems[3].classList.add('active-nav');
+            } else if (screenId === 'mypage-screen') {
+                navItems[4].classList.add('active-nav');
+            } else {
+                navItems[0].classList.add('active-nav');
+            }
+        }
+
+        window.scrollTo(0, 0);
+    }
+
+    function goBackToMain() {
+        showScreen('main-screen');
+    }
+
+    function formatPinInput(input) {
+        let value = input.value.replace(/-/g, '');
+        let formatted = '';
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0 && i < 12) {
+                formatted += '-';
+            }
+            formatted += value[i];
+        }
+        input.value = formatted;
+    }
+
+    function renderExchangeList() {
+        const listContainer = document.querySelector('#exchange-screen .exchange-items-list');
+        const categories = ['편의점', '베이커리', '카페', '패스트푸드', '외식'];
+        let html = '';
+        let addedCategories = {};
+
+        categories.forEach(cat => {
+            const items = exchangeItems.filter(item => item.category === cat);
+            if (items.length > 0) {
+                if (!addedCategories[cat]) {
+                    html += `<p class="category-title">${cat}</p>`;
+                    addedCategories[cat] = true;
+                }
+                items.forEach(item => {
+                    html += `
+                        <div class="exchange-item">
+                            <div class="item-info">
+                                <div class="item-logo"><i class="fa-solid fa-ticket"></i></div>
+                                <div class="item-name-value"><p>${item.name}</p><span>${item.sub}</span></div>
+                            </div>
+                            <button class="exchange-button" onclick="exchangeWithPin('${item.name}')">교환</button>
+                        </div>
+                    `;
+                });
+            }
+        });
+        listContainer.innerHTML = html;
+    }
+
+    function exchangeWithPin(itemName) {
+        const pinInputHTML = `
+            <div class="form-group" style="margin-top:20px; text-align:left;">
+                <label for="exchange-pin" style="font-weight:700;">올라콘 핀번호 (12자리)</label>
+                <input type="text" id="exchange-pin" placeholder="****-****-****" maxlength="14" 
+                       oninput="formatPinInput(this)" style="text-align:center; letter-spacing: 2px;">
+            </div>
+        `;
+
+        openModal(
+            '1:1 교환 확인',
+            `${itemName}으로 교환하려면<br>사용할 올라콘 핀번호를 입력해주세요.`,
+            () => {
+                const pin = document.getElementById('exchange-pin').value.replace(/-/g, '').trim();
+                if (pin.length === 12) {
+                    alert(`${itemName}으로 교환이 완료되었습니다.`);
+                    closeModal();
+                } else {
+                    alert('핀번호 12자리를 정확히 입력해주세요.');
+                }
+            },
+            true,
+            pinInputHTML
+        );
+    }
+
+    function renderProductCategories() {
+        const categories = ['전체', '베이커리', '커피', '치킨', '피자', '외식', '전자제품'];
+        const container = document.querySelector('.product-category-menu');
+        let html = '';
+        categories.forEach((cat, idx) => {
+            const activeClass = idx === 0 ? 'active' : '';
+            html += `<button class="category-button ${activeClass}" onclick="filterProducts(this, '${cat}')">${cat}</button>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function filterProducts(btn, category) {
+        document.querySelectorAll('.category-button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderProductList(category);
+    }
+
+    function renderProductList(category) {
+        const container = document.querySelector('.product-items-list');
+        const filtered = category === '전체' ? productItems : productItems.filter(i => i.category === category);
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">해당 카테고리 상품이 없습니다.</div>';
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            html += `
+                <div class="product-item">
+                    <div class="product-header"><p class="product-title">[${item.brand}] ${item.name}</p></div>
+                    <div class="product-detail"><p>원가: ${item.price.toLocaleString()}원</p></div>
+                    <div class="product-actions">
+                        <div class="upgrade-info"><i class="fa-solid fa-coins"></i> 보유금액 + 차액결제</div>
+                        <button class="buy-button" onclick="attemptProductPurchase('${item.name}', ${item.price})">${item.price.toLocaleString()}원 구매</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    function attemptProductPurchase(productName, productPrice) {
+        const availableVouchers = [10000, 30000, 50000];
+        const maxAddtionalPayment = 5000;
+        let requiredVoucher = null;
+
+        for (const voucherValue of availableVouchers) {
+            const maxAllowedPrice = voucherValue + maxAddtionalPayment;
+            if (productPrice < voucherValue) {
+                continue;
+            }
+            if (productPrice <= maxAllowedPrice) {
+                requiredVoucher = voucherValue;
+                break;
+            }
+        }
+
+        if (requiredVoucher === null) {
+            alert(`[구매 불가] 
+제품 가격 ${productPrice.toLocaleString()}원에 대해,
+보유하신 1만원, 3만원, 5만원 금액권으로는 구매 규칙을 만족하는 교환이 불가능합니다.
+(금액권 이하 제품 구매 불가 및 추가 결제 5천원 한도 초과)`);
+            return;
+        }
+
+        const additionalPayment = productPrice - requiredVoucher;
+        let message = `[${productName}] 구매를 위해 아래 금액권이 사용됩니다.\n`;
+        message += `사용 금액권: ${requiredVoucher.toLocaleString()}원\n`;
+        message += `추가 결제 금액: ${additionalPayment.toLocaleString()}원\n\n`;
+        message += '결제 창으로 이동합니다.';
+
+        openModal('결제 요청', message, () => {
+            alert(`결제 창이 열리고, ${additionalPayment.toLocaleString()}원의 추가 결제가 진행됩니다.\n(결제 시뮬레이션 완료)`);
+        });
+    }
+
+    function renderPinInputs() {
+        const count = document.getElementById('pin-count').value;
+        const container = document.getElementById('pin-inputs-container');
+        let html = '';
+
+        for (let i = 1; i <= count; i++) {
+            html += `
+                <div class="pin-input-item">
+                    <label>${i}.</label>
+                    <input type="text" class="pin-field" placeholder="****-****-****" maxlength="14" oninput="formatPinInput(this)">
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        updateRefundAmount(0);
+        document.getElementById('overall-status').className = 'status-default';
+        document.getElementById('overall-status').innerText = '핀번호 입력 후 [전체 핀번호 확인]을 눌러주세요.';
+    }
+
+    function checkAllPins() {
+        const pins = document.querySelectorAll('.pin-field');
+        let validCount = 0;
+        let isError = false;
+
+        pins.forEach(pin => {
+            const val = pin.value.replace(/-/g, '').trim();
+            if (val.length !== 12) {
+                pin.style.borderColor = 'red';
+                isError = true;
+            } else {
+                pin.style.borderColor = '#4CAF50';
+                validCount++;
+            }
+        });
+
+        const statusEl = document.getElementById('overall-status');
+        if (isError) {
+            statusEl.innerText = '일부 핀번호 형식이 올바르지 않습니다. (12자리 확인)';
+            statusEl.className = 'status-error';
+            updateRefundAmount(validCount);
+        } else {
+            statusEl.innerText = '모든 핀번호가 정상 확인되었습니다. (12자리)';
+            statusEl.className = 'status-success';
+            updateRefundAmount(validCount);
+        }
+    }
+
+    function updateRefundAmount(count) {
+        const unitPrice = 10000;
+        const feeRate = 0.1;
+        const refundPerUnit = unitPrice * (1 - feeRate);
+        const total = refundPerUnit * count;
+        document.getElementById('final-refund-amount').innerText = total.toLocaleString() + " 원";
+    }
+
+    function showBankSelectionModal() {
+        let listHtml = '<p style="font-size: 14px; color:#4b5563; margin:0 0 10px 0;">환불 받으실 은행을 선택해주세요.</p><div id="bank-list-scroll-container">';
+        bankList.forEach(bank => {
+            listHtml += `<div class="bank-item" onclick="selectBank('${bank}'); closeModal();">${bank}</div>`;
+        });
+        listHtml += '</div>';
+
+        openModal(
+            '은행 선택',
+            '',
+            null,
+            true,
+            listHtml
+        );
+        document.querySelector('#confirm-modal .btn-confirm').style.display = 'none';
+        document.querySelector('#confirm-modal .btn-cancel').innerText = '닫기';
+    }
+
+    function selectBank(bankName) {
+        const display = document.getElementById('bank-select-display');
+        const input = document.getElementById('bank-name-value');
+
+        display.innerText = bankName;
+        display.classList.add('selected');
+        input.value = bankName;
+
+        document.querySelector('#confirm-modal .btn-confirm').style.display = 'inline-block';
+        document.querySelector('#confirm-modal .btn-cancel').innerText = '취소';
+    }
+
+    function submitRefund() {
+        const amount = document.getElementById('final-refund-amount').innerText;
+        if (amount === "0 원") {
+            alert('유효한 핀번호가 없거나 확인되지 않았습니다.');
+            return;
+        }
+
+        const bank = document.getElementById('bank-name-value').value;
+        const account = document.getElementById('account-number').value;
+
+        if (!bank) {
+            alert('은행을 선택해주세요.');
+            return;
+        }
+        if (!account) {
+            alert('계좌번호를 입력해주세요.');
+            return;
+        }
+        openModal('환불 신청', `총 ${amount}을(를)<br>${bank} ${account}로<br>입금 요청하시겠습니까?`);
+    }
+
+    function renderSampleList() {
+        const container = document.getElementById('sample-list');
+        let html = '';
+        sampleItems.forEach(item => {
+            const isSoldOut = item.remain === 0;
+            const btnClass = isSoldOut ? 'style="background-color:#ccc; cursor:not-allowed;"' : '';
+            const btnText = isSoldOut ? '품절' : '선택하기';
+
+            html += `
+                <div class="exchange-item" ${!isSoldOut ? 'onclick="selectSample(this, \'' + item.name + '\')"' : ''}>
+                    <div class="item-info">
+                        <div class="item-logo" style="background: ${isSoldOut ? '#e5e7eb' : 'linear-gradient(135deg,#f97316,#facc15)'}"><i class="fa-solid fa-gift"></i></div>
+                        <div class="item-name-value">
+                            <p>${item.name}</p>
+                            <span style="color:${isSoldOut ? 'red' : '#007AFF'}">남은 수량: ${item.remain}개</span>
+                        </div>
+                    </div>
+                    <button class="exchange-button" ${btnClass}>${btnText}</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    let selectedSampleName = '';
+    function selectSample(el, name) {
+        const allItems = document.querySelectorAll('#sample-list .exchange-item');
+        allItems.forEach(item => item.style.backgroundColor = 'transparent');
+        el.style.backgroundColor = '#f0f8ff';
+        selectedSampleName = name;
+        document.getElementById('sample-name').scrollIntoView({ behavior: "smooth" });
+    }
+
+    function submitSampleRequest() {
+        if (!selectedSampleName) {
+            alert('위 리스트에서 샘플을 먼저 선택해주세요.');
+            return;
+        }
+        const name = document.getElementById('sample-name').value;
+        const addr = document.getElementById('sample-address').value;
+        if (!name || !addr) {
+            alert('배송 정보를 모두 입력해주세요.');
+            return;
+        }
+        openModal('신청 완료', `[${selectedSampleName}]<br>샘플 신청이 완료되었습니다!<br>3일 내 발송됩니다.`);
+    }
+
+    function renderTransactions() {
+        const container = document.getElementById('recent-transactions');
+        let html = '';
+        transactions.forEach(t => {
+            let amountClass = '';
+            let amountPrefix = '';
+            if (t.type === 'refund' || t.type === 'pin') {
+                amountClass = t.type === 'refund' ? 'amount-refund' : 'amount-pin';
+                amountPrefix = '+';
+            } else {
+                amountClass = 'amount-exchange';
+                amountPrefix = '';
+            }
+            html += `
+                <div class="transaction-item">
+                    <div class="transaction-info">
+                        <p class="transaction-title">${t.title}</p>
+                        <p class="transaction-date">${t.date}</p>
+                    </div>
+                    <div class="transaction-amount ${amountClass}">
+                        ${amountPrefix}${t.amount.toLocaleString()}원
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    const modal = document.getElementById('confirm-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMsg = document.getElementById('modal-message');
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+    const modalCustomContent = document.getElementById('modal-custom-content');
+
+    function openModal(title, message, confirmCallback, isCustomContent = false, customContentHTML = null) {
+        modalTitle.innerText = title;
+
+        if (isCustomContent) {
+            modalMsg.style.display = 'none';
+            modalCustomContent.innerHTML = customContentHTML;
+        } else {
+            modalMsg.style.display = 'block';
+            modalMsg.innerHTML = message;
+            modalCustomContent.innerHTML = '';
+        }
+
+        modal.classList.add('visible');
+
+        confirmBtn.onclick = function() {
+            if (confirmCallback) {
+                confirmCallback();
+            } else {
+                closeModal();
+                setTimeout(() => alert('요청이 정상적으로 처리되었습니다.'), 100);
+            }
+            if (!isCustomContent && confirmCallback) closeModal();
+            if (!isCustomContent && !confirmCallback) closeModal();
+        };
+
+        const closeHandler = function() {
+            closeModal();
+            if (isCustomContent) {
+                modalCustomContent.innerHTML = '';
+                document.querySelector('#confirm-modal .btn-confirm').style.display = 'inline-block';
+                document.querySelector('#confirm-modal .btn-cancel').innerText = '취소';
+            }
+        };
+
+        document.querySelector('.close-button').onclick = closeHandler;
+        document.getElementById('confirm-modal').onclick = function(event) {
+            if (event.target == document.getElementById('confirm-modal')) {
+                closeHandler();
+            }
+        };
+    }
+
+    function closeModal() {
+        modal.classList.remove('visible');
+    }
+</script>
+</body>
+</html>
